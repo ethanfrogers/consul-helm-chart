@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  server.json: |
+{{ .Values.serverConfig | indent 8 }}
+kind: ConfigMap
+metadata:
+  name: consul
+  namespace: {{ .Values.namespace }}

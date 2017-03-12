@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: consul-join
+  namespace: {{ .Values.namespace }}
+  annotations:
+    # This is what defines this resource as a hook. Without this line, the
+    # job is considered part of the release.
+    "helm.sh/hook": post-install
+spec:
+  template:
+    metadata:
+      name: consul-join
+    spec:
+      containers:
+        - name: consul
+          image: consul:0.7.2
+          command:
+            - "/usr/src/wait-for-it/wait-for-it.sh"
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          args:
+            - "-t"
+            - "0"
+            - "consul-2.consul.$(NAMESPACE).svc.cluster.local:8400"
+            - "--"
+            - "consul"
+            - "join"
+            - "-rpc-addr=consul-0.consul.$(NAMESPACE).svc.cluster.local:8400"
+            - consul-1.consul.$(NAMESPACE).svc.cluster.local
+            - consul-2.consul.$(NAMESPACE).svc.cluster.local
+          volumeMounts:
+          - name: wait-for-it
+            mountPath: /usr/src
+      restartPolicy: Never
+      volumes:
+      - name: wait-for-it
+        gitRepo:
+          repository: "https://github.com/raphaelahrens/wait-for-it.git"
+          revision: "master"
